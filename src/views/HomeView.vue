@@ -21,6 +21,7 @@
           <li
             v-for="searchResult in mapboxSearchResults"
             :key="searchResult.id"
+            @click="previewCity(searchResult)"
             class="py-2 cursor-pointer"
           >
             {{ searchResult.place_name }}
@@ -34,6 +35,29 @@
 <script setup>
 import { ref } from "vue";
 import axios from "axios";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+const previewCity = (searchResult) => {
+  console.log(searchResult);
+  /**
+   * * using split(",") to split the extracted string data from
+   * * place_name into an array of substrings sperated with comma
+   * * using array destructuring, split string are assigned to the
+   * * city and state variables
+   */
+  const [city, state] = searchResult.place_name.split(",");
+  console.log(city, state);
+  router.push({
+    name: "cityView",
+    params: { state: state.replaceAll(" ", ""), city: city },
+    query: {
+      lat: searchResult.geometry.coordinates[1],
+      lng: searchResult.geometry.coordinates[0],
+      preview: true,
+    },
+  });
+};
 
 const mapboxAPIKey =
   "pk.eyJ1IjoiZGFuaWVsLW5hc2VyaSIsImEiOiJjbGsyb2wyeGswajkzM2NtcHNhbTlsZDgzIn0.eZYdYuM3mg8pJ4D_jh-3kA";
@@ -55,9 +79,8 @@ const getSearchResults = () => {
   clearTimeout(queryTimeout.value);
 
   queryTimeout.value = setTimeout(async () => {
+    // ensure that if there is a value in searchQuery var
     if (searchQuery.value !== "") {
-      // ensure that if there is a value in searchQuery var
-
       try {
         const result = await axios.get(
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${searchQuery.value}.json?access_token=${mapboxAPIKey}&types=place`
